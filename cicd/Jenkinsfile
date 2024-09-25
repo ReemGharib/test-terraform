@@ -6,10 +6,10 @@ pipeline {
     }
 
     environment {
-        ECR_REPO_NAME = 'your-ecr-repo-name' // IMAGE_REPO_NAME
-        ECR_REGISTRY = 'YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com' //REPOSITORY_URI
+        ECR_REPO_NAME = 'message-history-dev-repo' // IMAGE_REPO_NAME
+        ECR_REGISTRY = '418272791914.dkr.ecr.${AWS_REGION}.amazonaws.com' //REPOSITORY_URI
         ECR_TAG = 'latest'
-        AWS_REGION = 'us-west-1'  // Replace with your AWS region
+        AWS_REGION = 'us-east-1'  // Replace with your AWS region
         AWS_ACCOUNT_ID = '969536676183'
     }
 
@@ -17,8 +17,8 @@ pipeline {
         stage('Checkout code') {
             steps {
                 echo "Clone code from github repository"
-                git branch: """${params.GIT_BRANCH}""", url: 'https://github.com/ReemGharib/my-terraform/'
-                bat 'terragrunt plan all'
+                git branch: """${params.GIT_BRANCH}""", url: 'https://github.com/ReemGharib/test-terraform/'
+
 
             }
         }
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 bat 'mvn clean package'
                 echo 'Build docker image'
-                bat 'docker build -t rfid-ecr-repo .'
+                bat 'docker build -t message-history-dev-repo .'
             }
         }
 
@@ -36,8 +36,9 @@ pipeline {
                 script {
                     if (params.BUILD_ENV == 'dev') {
                     echo params.BUILD_ENV + 'environment'
-                   // bat """docker tag  ${ECR_REPO_NAME}:${ECR_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
-                   // bat """docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
+                    bat """aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"""
+                    bat """docker tag  ${ECR_REPO_NAME}:${ECR_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
+                    bat """docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
                     }
                 }
             }
