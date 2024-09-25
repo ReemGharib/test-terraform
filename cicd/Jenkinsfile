@@ -35,8 +35,11 @@ pipeline {
                         bat 'terragrunt.exe --version'
 
                          // Navigate to the TERRAGRUNT_ENV_DIR and run Terragrunt plan-all
+                        // dir("${TERRAGRUNT_ENV_DIR}") {
+                        //     sh 'terragrunt plan-all'
+                        // }
                         bat """cd test-terraform\\global\\environments\\uat\\dynamodb"""
-                        bat """terragrunt plan-all"""
+                        bat """terragrunt plan-all --terragrunt-non-interactive"""
 
                     }
                 }
