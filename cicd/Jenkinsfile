@@ -13,6 +13,7 @@ pipeline {
         ECR_TAG = 'latest'
         AWS_REGION = 'us-east-1'  // Replace with your AWS region
         AWS_ACCOUNT_ID = '418272791914'
+        TERRAGRUNT_ENV_DIR = 'test-terraform\\global\\environments\\uat\\dynamodb'
     }
 
     stages {
@@ -22,7 +23,23 @@ pipeline {
                 echo "Clone code from github repository"
                 git branch: """${params.GIT_BRANCH}""", url: 'https://github.com/ReemGharib/test-terraform/'
 
+            }
+        }
 
+         stage('Build plan') {
+            steps {
+                script {
+                    if (params.BUILD_ENV == 'dev') {
+
+
+                        bat 'terragrunt.exe --version'
+
+                         // Navigate to the TERRAGRUNT_ENV_DIR and run Terragrunt plan-all
+                        bat """cd test-terraform\\global\\environments\\uat\\dynamodb"""
+                        bat """terragrunt plan-all"""
+
+                    }
+                }
             }
         }
 
