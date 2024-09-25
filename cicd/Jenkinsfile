@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+    parameters {
+           string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Git branch to build') // Example string parameter
+           choice(name: 'BUILD_ENV', choices: ['dev', 'test', 'prod'], description: 'Build environment') // Example choice parameter
+    }
+
+    environment {
+        ECR_REPO_NAME = 'your-ecr-repo-name' // IMAGE_REPO_NAME
+        ECR_REGISTRY = 'YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com' //REPOSITORY_URI
+        ECR_TAG = 'latest'
+        AWS_REGION = 'us-west-1'  // Replace with your AWS region
+        AWS_ACCOUNT_ID = '969536676183'
+    }
+
+    stages {
+        stage('Checkout code') {
+            steps {
+                echo "Clone code from github repository"
+                git branch: """${params.GIT_BRANCH}""", url: 'https://github.com/ReemGharib/my-terraform/'
+                bat 'terragrunt plan all'
+
+            }
+        }
+
+        stage('Build api & docker image') {
+            steps {
+                bat 'mvn clean package'
+                echo 'Build docker image'
+                bat 'docker build -t rfid-ecr-repo .'
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                script {
+                    if (params.BUILD_ENV == 'dev') {
+                    echo params.BUILD_ENV + 'environment'
+                   // bat """docker tag  ${ECR_REPO_NAME}:${ECR_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
+                   // bat """docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
+                    }
+                }
+            }
+        }
+    }
+}
