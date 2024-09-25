@@ -1,21 +1,24 @@
 pipeline {
     agent any
+
     parameters {
            string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Git branch to build') // Example string parameter
            choice(name: 'BUILD_ENV', choices: ['dev', 'test', 'prod'], description: 'Build environment') // Example choice parameter
     }
 
     environment {
+        AWS_CREDENTIALS = credentials('my-aws-credentials')
         ECR_REPO_NAME = 'message-history-dev-repo' // IMAGE_REPO_NAME
-        ECR_REGISTRY = '418272791914.dkr.ecr.${AWS_REGION}.amazonaws.com' //REPOSITORY_URI
+        ECR_REGISTRY = '418272791914.dkr.ecr.us-east-1.amazonaws.com' //REPOSITORY_URI
         ECR_TAG = 'latest'
         AWS_REGION = 'us-east-1'  // Replace with your AWS region
-        AWS_ACCOUNT_ID = '969536676183'
+        AWS_ACCOUNT_ID = '418272791914'
     }
 
     stages {
         stage('Checkout code') {
             steps {
+                bat 'aws sts get-caller-identity'
                 echo "Clone code from github repository"
                 git branch: """${params.GIT_BRANCH}""", url: 'https://github.com/ReemGharib/test-terraform/'
 
@@ -27,7 +30,7 @@ pipeline {
             steps {
                 bat 'mvn clean package'
                 echo 'Build docker image'
-                bat 'docker build -t message-history-dev-repo .'
+                bat 'docker build -t message-history-dev-repo:latest .'
             }
         }
 
@@ -36,6 +39,7 @@ pipeline {
                 script {
                     if (params.BUILD_ENV == 'dev') {
                     echo params.BUILD_ENV + 'environment'
+                    bat """aws sts get-caller-identity"""
                     bat """aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"""
                     bat """docker tag  ${ECR_REPO_NAME}:${ECR_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
                     bat """docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${ECR_TAG}"""
